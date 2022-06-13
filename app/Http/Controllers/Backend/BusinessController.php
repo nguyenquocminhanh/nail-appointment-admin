@@ -11,7 +11,7 @@ use Illuminate\Support\Carbon;
 class BusinessController extends Controller
 {
     public function BusinessAll() {
-        $business = Business::find(1);
+        $business = Business::first();
         return view('admin.business.business_all', compact('business'));
     }
 
@@ -20,22 +20,46 @@ class BusinessController extends Controller
     }
 
     public function BusinessStore(Request $request) {
-        $logo_image = $request->file('logo_image');
-        $name_gen_logo = hexdec(uniqid()).'.'.$logo_image->getClientOriginalExtension();
-        Image::make($logo_image)->resize(100, 100)->save('upload/business/logo/'.$name_gen_logo);
-        $save_url_logo = 'http://127.0.0.1:8001/upload/business/logo/'.$name_gen_logo;
+        $file = $request->file('logo_image');
+        $name_gen_logo = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+        $logo_img = Image::make($file);
+        $logo_img->resize(128, 128, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+        $resource = $logo_img->stream()->detach();
+        $folder = 'images/business/';
 
-        $cover_image = $request->file('cover_image');
-        $name_gen_cover = hexdec(uniqid()).'.'.$cover_image->getClientOriginalExtension();
-        Image::make($cover_image)->resize(500, 200)->save('upload/business/cover/'.$name_gen_cover);
-        $save_url_cover = 'http://127.0.0.1:8001/upload/business/cover/'.$name_gen_cover;
+        $path = \Storage::disk('s3')->put(
+            // location and file name to save
+            $folder . $name_gen_logo,
+            // file
+            $resource
+        );
+        $path = \Storage::disk('s3')->url($path);
+
+        // cover image
+        $name_gen_cover = hexdec(uniqid()).'.'.$request->file('cover_image')->getClientOriginalExtension();
+        $cover_img = Image::make($request->file('cover_image'));
+        $cover_img->resize(1025, 158, function ($constraint) {
+            $constraint->aspectRatio();
+        });
+
+        $resource_cover = $cover_img->stream()->detach();
+   
+        $path_cover = \Storage::disk('s3')->put(
+            // location and file name to save
+            $folder . $name_gen_cover,
+            // file
+            $resource_cover
+        );
+        $path_cover = \Storage::disk('s3')->url($path_cover);
 
         Business::insert([
             'name' => $request->name,
             'phone_number' => $request->phone_number,
             'address' => $request->address,
-            'logo_image' => $save_url_logo,
-            'cover_image' => $save_url_cover,
+            'logo_image' => 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen_logo,
+            'cover_image' => 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen_cover,
             'created_at' => Carbon::now(),
         ]);
 
@@ -48,44 +72,63 @@ class BusinessController extends Controller
     }
 
     public function BusinessEdit() {
-        $business = Business::find(1);
+        $business = Business::first();
         return view('admin.business.business_edit', compact('business'));
     }
 
     public function BusinessUpdate(Request $request) {
         if ($request->file('logo_image')) {
-            $business = Business::find(1);
-            $img_logo = $business->logo_image;
-            unlink($img_logo);
+            $business = Business::first();
 
-            $logo_image = $request->file('logo_image');
-            $name_gen_logo = hexdec(uniqid()).'.'.$logo_image->getClientOriginalExtension();
-            Image::make($logo_image)->resize(100, 100)->save('upload/business/logo/'.$name_gen_logo);
-            $save_url_logo = 'http://127.0.0.1:8001/upload/business/logo/'.$name_gen_logo;
+            $file = $request->file('logo_image');
+            $name_gen_logo = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+            $logo_img = Image::make($file);
+            $logo_img->resize(128, 128, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $resource = $logo_img->stream()->detach();
+            $folder = 'images/business/';
+
+            $path = \Storage::disk('s3')->put(
+                // location and file name to save
+                $folder . $name_gen_logo,
+                // file
+                $resource
+            );
+            $path = \Storage::disk('s3')->url($path);
 
             if ($request->file('cover_image')) {
-                $img_cover = $business->cover_image;
-                unlink($img_cover);
+                // cover image
+                $name_gen_cover = hexdec(uniqid()).'.'.$request->file('cover_image')->getClientOriginalExtension();
+                $cover_img = Image::make($request->file('cover_image'));
+                $cover_img->resize(1025, 158, function ($constraint) {
+                    $constraint->aspectRatio();
+                });
 
-                $cover_image = $request->file('cover_image');
-                $name_gen_cover = hexdec(uniqid()).'.'.$cover_image->getClientOriginalExtension();
-                Image::make($cover_image)->resize(500, 200)->save('upload/business/cover/'.$name_gen_cover);
-                $save_url_cover = 'http://127.0.0.1:8001/upload/business/cover/'.$name_gen_cover;
+                $resource_cover = $cover_img->stream()->detach();
 
-                Business::find(1)->update([
+                $path_cover = \Storage::disk('s3')->put(
+                    // location and file name to save
+                    $folder . $name_gen_cover,
+                    // file
+                    $resource_cover
+                );
+                $path_cover = \Storage::disk('s3')->url($path_cover);
+
+                Business::first()->update([
                     'name' => $request->name,
                     'phone_number' => $request->phone_number,
                     'address' => $request->address,
-                    'logo_image' => $save_url_logo,
-                    'cover_image' => $save_url_cover,
+                    'logo_image' => 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen_logo,
+                    'cover_image' => 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen_cover,
                     'updated_at' => Carbon::now(),
                 ]);
             } else {
-                Business::find(1)->update([
+                Business::first()->update([
                     'name' => $request->name,
                     'phone_number' => $request->phone_number,
                     'address' => $request->address,
-                    'logo_image' => $save_url_logo,
+                    'logo_image' => 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen_logo,
                     'updated_at' => Carbon::now(),
                 ]);
             }
@@ -97,7 +140,7 @@ class BusinessController extends Controller
     
             return redirect()->route('business')->with($notification);
         } else {
-            Business::find(1)->update([
+            Business::first()->update([
                 'name' => $request->name,
                 'phone_number' => $request->phone_number,
                 'address' => $request->address,
@@ -116,7 +159,7 @@ class BusinessController extends Controller
 
     // API
     public function BusinessInfo() {
-        $result = Business::find(1);
+        $result = Business::first();
         return $result;
     }
 }

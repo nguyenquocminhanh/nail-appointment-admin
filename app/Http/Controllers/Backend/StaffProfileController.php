@@ -46,15 +46,24 @@ class StaffProfileController extends Controller
         $staff = Auth::user();
         
         if($request->file('profile_image')) {
-            $image = $request->file('profile_image');
-            $name_gen = hexdec(uniqid()).'.'.$image->getClientOriginalExtension();
-            Image::make($image)->resize(200, 200)->save('upload/user/'.$name_gen);
-            $save_url = 'upload/user/'.$name_gen;
-            // remove old image
-            if ($staff->profile_image) {
-                unlink($staff->profile_image);
-            }
-            $staff->profile_image = $save_url;
+            $file = $request->file('profile_image');
+            $name_gen = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+            $img = Image::make($file);
+            $img->resize(200, 200, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $resource = $img->stream()->detach();
+            $folder = 'images/staff/';
+
+            $path = \Storage::disk('s3')->put(
+                // location and file name to save
+                $folder . $name_gen,
+                // file
+                $resource
+            );
+            $path = \Storage::disk('s3')->url($path);
+
+            $staff->profile_image = 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen;
 
             // send noti to admin
             AdminUpdateNoti::insert([

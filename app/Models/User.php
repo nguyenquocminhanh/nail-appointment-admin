@@ -12,6 +12,7 @@ use App\Models\Service;
 use App\Models\StaffDay;
 use App\Models\Appointment;
 use App\Models\UserAppNoti;
+use App\Models\AdminUpdateNoti;
 
 class User extends Authenticatable
 {
@@ -70,5 +71,9 @@ class User extends Authenticatable
 
     public function user_app_noties(){
         return $this->hasMany(UserAppNoti::class, 'user_id', 'id');
+    }
+
+    public function admin_update_noties(){
+        return $this->hasMany(AdminUpdateNoti::class, 'user_id', 'id');
     }
 }

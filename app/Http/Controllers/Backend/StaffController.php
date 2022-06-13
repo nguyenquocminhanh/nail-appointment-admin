@@ -10,6 +10,8 @@ use App\Models\Service;
 use App\Models\ServiceUser;
 use App\Models\StaffDay;
 use App\Models\StaffTime;
+use App\Models\Appointment;
+use App\Models\AdminUpdateNoti;
 use Image;
 use DB;
 
@@ -41,11 +43,24 @@ class StaffController extends Controller
         $staff = new User();
 
         if ($request->file('profile_image')) {
-            $image = $request->file('profile_image');
-            $name_gen = hexdec(uniqid()).'.'.$image->getClientOriginalExtension();
-            Image::make($image)->resize(150, 150)->save('upload/user/'.$name_gen);
-            $save_url = 'http://127.0.0.1:8001/upload/user/'.$name_gen;
-            $staff->profile_image = $save_url;
+            $file = $request->file('profile_image');
+            $name_gen = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+            $img = Image::make($file);
+            $img->resize(200, 200, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $resource = $img->stream()->detach();
+            $folder = 'images/staff/';
+
+            $path = \Storage::disk('s3')->put(
+                // location and file name to save
+                $folder . $name_gen,
+                // file
+                $resource
+            );
+            $path = \Storage::disk('s3')->url($path);
+
+            $staff->profile_image = 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen;
         }
 
         if ($request->visible) {
@@ -144,15 +159,24 @@ class StaffController extends Controller
         $staff = User::findOrFail($request->staff_id);
         
         if($request->file('profile_image')) {
-            $image = $request->file('profile_image');
-            $name_gen = hexdec(uniqid()).'.'.$image->getClientOriginalExtension();
-            Image::make($image)->resize(150, 150)->save('upload/user/'.$name_gen);
-            $save_url = 'http://127.0.0.1:8001/upload/user/'.$name_gen;
-            // remove old image
-            if ($staff->profile_image) {
-                unlink($staff->profile_image);
-            }
-            $staff->profile_image = $save_url;
+            $file = $request->file('profile_image');
+            $name_gen = hexdec(uniqid()).'.'.$file->getClientOriginalExtension();
+            $img = Image::make($file);
+            $img->resize(200, 200, function ($constraint) {
+                $constraint->aspectRatio();
+            });
+            $resource = $img->stream()->detach();
+            $folder = 'images/staff/';
+
+            $path = \Storage::disk('s3')->put(
+                // location and file name to save
+                $folder . $name_gen,
+                // file
+                $resource
+            );
+            $path = \Storage::disk('s3')->url($path);
+
+            $staff->profile_image = 'https://'.env('AWS_BUCKET').'.s3.'.env('AWS_DEFAULT_REGION').'.amazonaws.com/'.$folder.$name_gen;
         }
 
         $staff_password = $staff->password;
@@ -264,10 +288,11 @@ class StaffController extends Controller
 
         $services_user->each->delete();
 
-        if ($staff->profile_image) {
-            $img = $staff->profile_image;
-            unlink($img);
-        }
+        $appointments = Appointment::where('user_id', $id)->get();
+        $appointments->each->delete();
+
+        $notifications = AdminUpdateNoti::where('user_id', $id)->get();
+        $notifications->each->delete();
 
         $staff->delete();
         $notification = array(
