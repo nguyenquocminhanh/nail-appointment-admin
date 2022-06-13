@@ -14,7 +14,7 @@
                         </center>
                         <br>
                         <div class="card-body">
-                            <div class="row">
+                            <div class="row gy-3">
                                 <div class="col-md-4">
                                     <h5 class="card-title">Basic Information</h5>
                                     <hr>

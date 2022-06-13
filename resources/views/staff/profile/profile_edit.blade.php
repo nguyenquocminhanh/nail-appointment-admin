@@ -112,7 +112,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-lg-6">
+                                <div class="col-lg-6 px-0">
                                     <label for="example-text-input" class="col-sm-12 col-form-label">Staff Working Hours</label>
                                     @php
                                         $days_of_week = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
