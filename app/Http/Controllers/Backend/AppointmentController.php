@@ -190,13 +190,13 @@ class AppointmentController extends Controller
             if ($appointment && $email) {
                 $emailData = [
                     'name' => $name,
-                    'business_name' => Business::find(1)->name,
+                    'business_name' => Business::first()->name,
                     'time' => date('g:i A', strtotime($time)),
                     'date' => date('D, M d, Y', strtotime($date)),
                     'staff' => $appointment->user->name,
                     'services' => $services,
-                    'business_address' => Business::find(1)->address,
-                    'business_phone' => Business::find(1)->phone_number
+                    'business_address' => Business::first()->address,
+                    'business_phone' => Business::first()->phone_number
                 ];
 
                 try {
@@ -245,13 +245,13 @@ class AppointmentController extends Controller
             if ($email) {
                 $emailData = [
                     'name' => $name,
-                    'business_name' => Business::find(1)->name,
+                    'business_name' => Business::first()->name,
                     'time' => date('g:i A', strtotime($time)),
                     'date' => date('D, M d, Y', strtotime($date)),
                     'staff' => $staff_name,
                     'services' => $services,
-                    'business_address' => Business::find(1)->address,
-                    'business_phone' => Business::find(1)->phone_number
+                    'business_address' => Business::first()->address,
+                    'business_phone' => Business::first()->phone_number
                 ];
 
                 try {
