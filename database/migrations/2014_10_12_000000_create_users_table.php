@@ -21,7 +21,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone_number')->nullable();
             $table->string('profile_image')->nullable();
-            $table->tinyInteger('visible')->comment('0=Not, 1=Visible');
+            $table->tinyInteger('visible')->default('1')->comment('0=Not, 1=Visible');
 
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
